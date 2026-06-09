@@ -25,6 +25,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
+
+
 @RestController
 @RequestMapping("/api/videos")
 @RequiredArgsConstructor
@@ -73,6 +78,47 @@ public class VideoController {
                 .body("Error fetching video: " + e.getMessage());
         }
     }
+    
+    @GetMapping("/download/{videoId}")
+    public ResponseEntity<?> downloadVideo(@PathVariable Long videoId) {
+        log.info("Video download request received for videoId: {}", videoId);
+        
+        try {
+            Resource resource = videoService.downloadVideo(videoId);
+            
+            // Get video details for filename
+            Optional<VideoEntity> video = videoService.getVideoById(videoId);
+            
+            if (video.isEmpty()) {
+                log.warn("Video metadata not found for videoId: {}", videoId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Video not found with id: " + videoId);
+            }
+            
+            String fileName = video.get().getFileName();
+            
+            log.info("Returning video file for download - videoId: {}, filename: {}", videoId, fileName);
+            
+            return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("video/mp4"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(resource);
+            
+        } catch (ResourceNotFoundException e) {
+            log.error("Resource not found during video download: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("Error during video download for videoId: {}", videoId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Video download failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error during video download for videoId: {}", videoId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Unexpected error during video download: " + e.getMessage());
+        }
+    }
+
 
     
     @PostMapping("/upload")

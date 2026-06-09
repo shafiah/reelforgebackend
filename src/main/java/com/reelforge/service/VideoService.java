@@ -1,6 +1,7 @@
 package com.reelforge.service;
 
 import com.reelforge.dto.VideoProcessRequest;
+import org.springframework.core.io.Resource;
 import com.reelforge.dto.VideoProcessingResponse;
 import com.reelforge.dto.VideoUploadResponse;
 import com.reelforge.entity.VideoEntity;
@@ -25,4 +26,6 @@ public interface VideoService {
     VideoProcessingResponse processVideo(Long videoId);
     
     VideoProcessingResponse processVideoWithAudio(VideoProcessRequest request);
+    
+    Resource downloadVideo(Long videoId);
 }

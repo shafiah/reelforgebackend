@@ -22,6 +22,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -202,6 +208,43 @@ public class VideoServiceImpl implements VideoService {
             throw new RuntimeException("Unexpected error during video processing: " + e.getMessage(), e);
         }
     }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Resource downloadVideo(Long videoId) {
+        log.info("Starting video download for videoId: {}", videoId);
+        
+        // Find VideoEntity by videoId
+        VideoEntity video = videoRepository.findById(videoId)
+            .orElseThrow(() -> {
+                log.warn("Video not found with id: {}", videoId);
+                return new ResourceNotFoundException("Video not found with id: " + videoId);
+            });
+        
+        log.debug("Found video: {} with path: {}", video.getFileName(), video.getFilePath());
+        
+        String filePath = video.getFilePath();
+        Path path = Paths.get(filePath);
+        
+        // Verify file exists on disk
+        if (!Files.exists(path)) {
+            log.warn("Video file not found on disk at path: {} for videoId: {}", filePath, videoId);
+            throw new ResourceNotFoundException("Video file not found on disk for videoId: " + videoId);
+        }
+        
+        log.info("Video file verified for download - videoId: {}, path: {}", videoId, filePath);
+        
+        try {
+            Resource resource = new FileSystemResource(path);
+            log.info("Video download resource prepared for videoId: {}", videoId);
+            return resource;
+            
+        } catch (Exception e) {
+            log.error("Error preparing video download for videoId: {}", videoId, e);
+            throw new RuntimeException("Error preparing video download: " + e.getMessage(), e);
+        }
+    }
+
 
     
     @Override
