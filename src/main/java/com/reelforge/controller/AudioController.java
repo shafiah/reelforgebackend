@@ -17,6 +17,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -27,6 +29,46 @@ public class AudioController {
     
     private final AudioService audioService;
     private static final String UPLOAD_DIR = "uploads/audios";
+    
+    @GetMapping
+    public ResponseEntity<?> getAllAudios() {
+        log.info("Fetching all uploaded audios");
+        
+        try {
+            List<AudioEntity> audios = audioService.getAllAudio();
+            log.info("Retrieved {} audios", audios.size());
+            return ResponseEntity.ok(audios);
+            
+        } catch (Exception e) {
+            log.error("Error fetching all audios", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error fetching audios: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getAudioById(@PathVariable Long id) {
+        log.info("Fetching audio by ID: {}", id);
+        
+        try {
+            Optional<AudioEntity> audio = audioService.getAudioById(id);
+            
+            if (audio.isEmpty()) {
+                log.warn("Audio not found with id: {}", id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Audio not found with id: " + id);
+            }
+            
+            log.info("Retrieved audio with id: {}", id);
+            return ResponseEntity.ok(audio.get());
+            
+        } catch (Exception e) {
+            log.error("Error fetching audio by ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error fetching audio: " + e.getMessage());
+        }
+    }
+
     
     @PostMapping("/upload")
     public ResponseEntity<AudioUploadResponse> uploadAudio(@RequestParam("audio") MultipartFile audioFile) {

@@ -21,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +33,47 @@ public class VideoController {
     
     private final VideoService videoService;
     private static final String UPLOAD_DIR = "uploads/originals";
+    
+    
+    @GetMapping
+    public ResponseEntity<?> getAllVideos() {
+        log.info("Fetching all uploaded videos");
+        
+        try {
+            List<VideoEntity> videos = videoService.getAllVideos();
+            log.info("Retrieved {} videos", videos.size());
+            return ResponseEntity.ok(videos);
+            
+        } catch (Exception e) {
+            log.error("Error fetching all videos", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error fetching videos: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getVideoById(@PathVariable Long id) {
+        log.info("Fetching video by ID: {}", id);
+        
+        try {
+            Optional<VideoEntity> video = videoService.getVideoById(id);
+            
+            if (video.isEmpty()) {
+                log.warn("Video not found with id: {}", id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Video not found with id: " + id);
+            }
+            
+            log.info("Retrieved video with id: {}", id);
+            return ResponseEntity.ok(video.get());
+            
+        } catch (Exception e) {
+            log.error("Error fetching video by ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error fetching video: " + e.getMessage());
+        }
+    }
+
     
     @PostMapping("/upload")
     public ResponseEntity<VideoUploadResponse> uploadVideo(@RequestParam("video") MultipartFile file) {
