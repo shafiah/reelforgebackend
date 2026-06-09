@@ -1,8 +1,11 @@
 package com.reelforge.controller;
 
 import com.reelforge.dto.VideoProcessingResponse;
+import com.reelforge.dto.VideoProcessRequest;
+
 import com.reelforge.dto.VideoUploadResponse;
 import com.reelforge.entity.VideoEntity;
+import com.reelforge.exception.ResourceNotFoundException;
 import com.reelforge.service.VideoService;
 import com.reelforge.util.FileUtil;
 import lombok.RequiredArgsConstructor;
@@ -116,6 +119,41 @@ public class VideoController {
                     .build());
         }
     }
+    
+    @PostMapping("/process")
+    public ResponseEntity<?> processVideoWithAudio(@RequestBody VideoProcessRequest request) {
+        log.info("Video processing request received for videoId: {} and audioId: {}", 
+            request.getVideoId(), request.getAudioId());
+        
+        try {
+            VideoProcessingResponse response = videoService.processVideoWithAudio(request);
+            log.info("Video processing endpoint returning success response for videoId: {}", request.getVideoId());
+            return ResponseEntity.ok(response);
+            
+        } catch (ResourceNotFoundException e) {
+            log.error("Resource not found during video processing: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(VideoProcessingResponse.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .build());
+        } catch (RuntimeException e) {
+            log.error("Error during video processing for videoId: {}", request.getVideoId(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(VideoProcessingResponse.builder()
+                    .success(false)
+                    .message("Video processing failed: " + e.getMessage())
+                    .build());
+        } catch (Exception e) {
+            log.error("Unexpected error during video processing for videoId: {}", request.getVideoId(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(VideoProcessingResponse.builder()
+                    .success(false)
+                    .message("Unexpected error during video processing: " + e.getMessage())
+                    .build());
+        }
+    }
+
     
     @PostMapping("/process/{videoId}")
     public ResponseEntity<?> processVideo(@PathVariable Long videoId) {

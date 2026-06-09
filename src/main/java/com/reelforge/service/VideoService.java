@@ -1,5 +1,6 @@
 package com.reelforge.service;
 
+import com.reelforge.dto.VideoProcessRequest;
 import com.reelforge.dto.VideoProcessingResponse;
 import com.reelforge.dto.VideoUploadResponse;
 import com.reelforge.entity.VideoEntity;
@@ -22,4 +23,6 @@ public interface VideoService {
     List<VideoEntity> getVideosByResolution(String resolution);
     
     VideoProcessingResponse processVideo(Long videoId);
+    
+    VideoProcessingResponse processVideoWithAudio(VideoProcessRequest request);
 }
